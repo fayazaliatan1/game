@@ -93,7 +93,7 @@
         }
         
         /* Stats and Controls */
-        .stats, .controls, .store, .leaderboard, .missions, .powerups {
+        .stats, .controls, .store, .leaderboard, .missions, .powerups, .weapon-upgrades {
             background: rgba(0, 0, 0, 0.4);
             border-radius: 15px;
             padding: 20px;
@@ -183,14 +183,14 @@
         }
         
         /* Store Items */
-        .store-items, .mission-items, .powerup-items {
+        .store-items, .mission-items, .powerup-items, .weapon-items {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 15px;
             margin-top: 15px;
         }
         
-        .store-item, .mission-item, .powerup-item {
+        .store-item, .mission-item, .powerup-item, .weapon-item {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             padding: 15px;
@@ -200,18 +200,18 @@
             position: relative;
         }
         
-        .store-item:hover, .mission-item:hover, .powerup-item:hover {
+        .store-item:hover, .mission-item:hover, .powerup-item:hover, .weapon-item:hover {
             transform: translateY(-5px);
             background: rgba(255, 255, 255, 0.2);
         }
         
-        .store-item i, .mission-item i, .powerup-item i {
+        .store-item i, .mission-item i, .powerup-item i, .weapon-item i {
             font-size: 2rem;
             margin-bottom: 10px;
             color: var(--primary);
         }
         
-        .mission-progress {
+        .mission-progress, .weapon-progress {
             height: 6px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 3px;
@@ -219,7 +219,7 @@
             overflow: hidden;
         }
         
-        .mission-progress-bar {
+        .mission-progress-bar, .weapon-progress-bar {
             height: 100%;
             background: linear-gradient(to right, var(--primary), var(--secondary));
             border-radius: 3px;
@@ -470,6 +470,23 @@
             margin: 20px 0;
         }
         
+        /* Weapon Upgrade System */
+        .weapon-level {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .weapon-name {
+            font-weight: bold;
+        }
+        
+        .weapon-level-value {
+            color: var(--warning);
+            font-weight: bold;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .game-container {
@@ -480,7 +497,7 @@
                 font-size: 2.5rem;
             }
             
-            .store-items, .mission-items, .powerup-items {
+            .store-items, .mission-items, .powerup-items, .weapon-items {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
@@ -571,20 +588,45 @@
                     </div>
                 </div>
                 
+                <div class="weapon-upgrades">
+                    <h2>Weapon System</h2>
+                    <div class="weapon-level">
+                        <span class="weapon-name">Laser Power:</span>
+                        <span class="weapon-level-value" id="laserLevel">1</span>
+                    </div>
+                    <div class="weapon-progress">
+                        <div class="weapon-progress-bar" id="laserProgress" style="width: 0%"></div>
+                    </div>
+                    <div class="weapon-level">
+                        <span class="weapon-name">Fire Rate:</span>
+                        <span class="weapon-level-value" id="fireRateLevel">1</span>
+                    </div>
+                    <div class="weapon-progress">
+                        <div class="weapon-progress-bar" id="fireRateProgress" style="width: 0%"></div>
+                    </div>
+                    <div class="weapon-level">
+                        <span class="weapon-name">Special Weapon:</span>
+                        <span class="weapon-level-value" id="specialLevel">1</span>
+                    </div>
+                    <div class="weapon-progress">
+                        <div class="weapon-progress-bar" id="specialProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+                
                 <div class="powerups">
                     <h2>Active Power-ups</h2>
                     <div class="powerup-items">
-                        <div class="powerup-item" id="rapidFireItem">
+                        <div class="powerup-item" id="rapidFireItem" style="display: none;">
                             <i class="fas fa-bolt"></i>
                             <p>Rapid Fire</p>
                             <p class="stat-value">Active</p>
                         </div>
-                        <div class="powerup-item" id="shieldItem">
+                        <div class="powerup-item" id="shieldItem" style="display: none;">
                             <i class="fas fa-shield-alt"></i>
                             <p>Shield</p>
                             <p class="stat-value">Active</p>
                         </div>
-                        <div class="powerup-item" id="doubleScoreItem">
+                        <div class="powerup-item" id="doubleScoreItem" style="display: none;">
                             <i class="fas fa-star"></i>
                             <p>Double Score</p>
                             <p class="stat-value">Active</p>
@@ -734,6 +776,21 @@
         let activePowerups = {};
         let specialWeaponCharges = 0;
         
+        // Weapon progression system
+        let weaponLevels = {
+            laser: 1,
+            fireRate: 1,
+            special: 1
+        };
+        
+        let weaponProgress = {
+            laser: 0,
+            fireRate: 0,
+            special: 0
+        };
+        
+        const maxWeaponLevel = 5;
+        
         // Create animated background particles
         function createParticles() {
             const particlesContainer = document.getElementById('particles');
@@ -797,6 +854,42 @@
             } else {
                 document.getElementById('dailyBtn').style.display = 'none';
             }
+        }
+        
+        // Update weapon progress
+        function updateWeaponProgress(weaponType, amount) {
+            if (weaponLevels[weaponType] >= maxWeaponLevel) return;
+            
+            weaponProgress[weaponType] += amount;
+            const progressElement = document.getElementById(`${weaponType}Progress`);
+            const requiredProgress = weaponLevels[weaponType] * 20;
+            
+            progressElement.style.width = `${Math.min(100, (weaponProgress[weaponType] / requiredProgress) * 100)}%`;
+            
+            if (weaponProgress[weaponType] >= requiredProgress) {
+                weaponLevels[weaponType]++;
+                weaponProgress[weaponType] = 0;
+                document.getElementById(`${weaponType}Level`).textContent = weaponLevels[weaponType];
+                progressElement.style.width = '0%';
+                showNotification(`${weaponType.replace(/([A-Z])/g, ' $1').toUpperCase()} upgraded to level ${weaponLevels[weaponType]}!`, 'success');
+            }
+        }
+        
+        // Get weapon power based on level
+        function getWeaponPower(weaponType) {
+            const baseValues = {
+                laser: 1,
+                fireRate: 1,
+                special: 1
+            };
+            
+            const multipliers = {
+                laser: 0.5,
+                fireRate: 0.2,
+                special: 0.3
+            };
+            
+            return baseValues[weaponType] + (weaponLevels[weaponType] - 1) * multipliers[weaponType];
         }
         
         // Initialize game canvas and start the game
@@ -877,6 +970,7 @@
                     speed: 1,
                     color: '#ff416c',
                     health: bossHealth,
+                    maxHealth: bossHealth,
                     points: 500,
                     isBoss: true
                 });
@@ -974,9 +1068,33 @@
             
             // Draw bullets
             function drawBullets() {
-                ctx.fillStyle = player.rapidFire ? '#ffff00' : '#ffffff';
+                const laserPower = getWeaponPower('laser');
+                
                 for (let bullet of bullets) {
-                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                    // Draw different bullet types based on laser power
+                    if (laserPower >= 4) {
+                        // Level 4+ laser: triple shot with different colors
+                        ctx.fillStyle = '#ff0000';
+                        ctx.fillRect(bullet.x - 2, bullet.y, 4, 15);
+                        ctx.fillStyle = '#ffff00';
+                        ctx.fillRect(bullet.x, bullet.y, 4, 15);
+                        ctx.fillStyle = '#00ffff';
+                        ctx.fillRect(bullet.x + 2, bullet.y, 4, 15);
+                    } else if (laserPower >= 3) {
+                        // Level 3 laser: double shot
+                        ctx.fillStyle = '#ffff00';
+                        ctx.fillRect(bullet.x - 2, bullet.y, 4, 15);
+                        ctx.fillStyle = '#00ffff';
+                        ctx.fillRect(bullet.x + 2, bullet.y, 4, 15);
+                    } else if (laserPower >= 2) {
+                        // Level 2 laser: larger bullet
+                        ctx.fillStyle = '#ffff00';
+                        ctx.fillRect(bullet.x - 1, bullet.y, 6, 15);
+                    } else {
+                        // Level 1 laser: basic bullet
+                        ctx.fillStyle = player.rapidFire ? '#ffff00' : '#ffffff';
+                        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                    }
                 }
             }
             
@@ -1045,8 +1163,36 @@
             
             // Draw special attacks
             function drawSpecialAttacks() {
+                const specialPower = getWeaponPower('special');
+                
                 for (let attack of specialAttacks) {
-                    ctx.fillStyle = '#ffaa00';
+                    if (specialPower >= 4) {
+                        // Level 4+ special: multi-color explosion
+                        const gradient = ctx.createRadialGradient(
+                            attack.x, attack.y, 0,
+                            attack.x, attack.y, attack.radius
+                        );
+                        gradient.addColorStop(0, '#ff0000');
+                        gradient.addColorStop(0.5, '#ffff00');
+                        gradient.addColorStop(1, '#00ffff');
+                        ctx.fillStyle = gradient;
+                    } else if (specialPower >= 3) {
+                        // Level 3 special: fire explosion
+                        const gradient = ctx.createRadialGradient(
+                            attack.x, attack.y, 0,
+                            attack.x, attack.y, attack.radius
+                        );
+                        gradient.addColorStop(0, '#ffff00');
+                        gradient.addColorStop(1, '#ff0000');
+                        ctx.fillStyle = gradient;
+                    } else if (specialPower >= 2) {
+                        // Level 2 special: larger explosion
+                        ctx.fillStyle = '#ffaa00';
+                    } else {
+                        // Level 1 special: basic explosion
+                        ctx.fillStyle = '#ffaa00';
+                    }
+                    
                     ctx.beginPath();
                     ctx.arc(attack.x, attack.y, attack.radius, 0, Math.PI * 2);
                     ctx.fill();
@@ -1188,8 +1334,11 @@
                             // Collision detected
                             bullets.splice(i, 1);
                             
+                            // Calculate damage based on laser power
+                            const damage = Math.floor(getWeaponPower('laser'));
+                            
                             // Reduce enemy health
-                            enemies[j].health--;
+                            enemies[j].health -= damage;
                             
                             // Create explosion
                             explosions.push({
@@ -1215,6 +1364,10 @@
                                     maxKillStreak = killStreak;
                                 }
                                 
+                                // Update weapon progress
+                                updateWeaponProgress('laser', 1);
+                                updateWeaponProgress('fireRate', 1);
+                                
                                 // Check for streak bonus
                                 if (killStreak % 5 === 0) {
                                     const streakBonus = killStreak * 10;
@@ -1238,6 +1391,7 @@
                                     bossActive = false;
                                     document.getElementById('bossHealth').style.display = 'none';
                                     showNotification('Boss defeated!', 'success');
+                                    updateWeaponProgress('special', 10); // Big bonus for defeating boss
                                 }
                             } else if (enemies[j].isBoss) {
                                 // Update boss health
@@ -1265,11 +1419,11 @@
                         const distance = Math.sqrt(dx * dx + dy * dy);
                         
                         if (distance < specialAttacks[i].radius + enemies[j].width / 2) {
-                            // Destroy enemy
-                            let points = enemies[j].points;
-                            if (player.doubleScore) points *= 2;
-                            score += points;
-                            coins += Math.floor(points / 5);
+                            // Calculate damage based on special weapon power
+                            const damage = Math.floor(getWeaponPower('special') * 5);
+                            
+                            // Reduce enemy health
+                            enemies[j].health -= damage;
                             
                             // Create explosion
                             explosions.push({
@@ -1279,14 +1433,30 @@
                                 frame: 0
                             });
                             
-                            // Remove enemy
-                            enemies.splice(j, 1);
-                            
-                            updateUI();
-                            
-                            // Check if all enemies are destroyed
-                            if (enemies.length === 0) {
-                                levelUp();
+                            // Check if enemy is destroyed
+                            if (enemies[j].health <= 0) {
+                                // Add score
+                                let points = enemies[j].points;
+                                if (player.doubleScore) points *= 2;
+                                score += points;
+                                coins += Math.floor(points / 5);
+                                
+                                // Update weapon progress
+                                updateWeaponProgress('special', 2);
+                                
+                                // Remove enemy
+                                enemies.splice(j, 1);
+                                
+                                updateUI();
+                                
+                                // Check if all enemies are destroyed
+                                if (enemies.length === 0) {
+                                    levelUp();
+                                }
+                            } else if (enemies[j].isBoss) {
+                                // Update boss health
+                                bossHealth = (enemies[j].health / enemies[j].maxHealth) * 100;
+                                updateBossHealth();
                             }
                         }
                     }
@@ -1443,8 +1613,18 @@
             
             // Start the game
             function startGame() {
-                if (gameRunning) return;
-                
+                if (gameRunning) {
+                    // If game is already running, restart it
+                    gameRunning = false;
+                    setTimeout(() => {
+                        startNewGame();
+                    }, 100);
+                } else {
+                    startNewGame();
+                }
+            }
+            
+            function startNewGame() {
                 // Reset game state
                 score = 0;
                 level = 1;
@@ -1460,8 +1640,32 @@
                 specialAttacks.length = 0;
                 explosions.length = 0;
                 
+                // Reset weapon progress for new game
+                weaponLevels = {
+                    laser: 1,
+                    fireRate: 1,
+                    special: 1
+                };
+                
+                weaponProgress = {
+                    laser: 0,
+                    fireRate: 0,
+                    special: 0
+                };
+                
+                // Update UI
+                document.getElementById('laserLevel').textContent = weaponLevels.laser;
+                document.getElementById('fireRateLevel').textContent = weaponLevels.fireRate;
+                document.getElementById('specialLevel').textContent = weaponLevels.special;
+                document.getElementById('laserProgress').style.width = '0%';
+                document.getElementById('fireRateProgress').style.width = '0%';
+                document.getElementById('specialProgress').style.width = '0%';
+                
                 document.getElementById('bossHealth').style.display = 'none';
                 document.getElementById('powerupActive').style.display = 'none';
+                document.getElementById('rapidFireItem').style.display = 'none';
+                document.getElementById('shieldItem').style.display = 'none';
+                document.getElementById('doubleScoreItem').style.display = 'none';
                 
                 createEnemies();
                 updateUI();
@@ -1470,6 +1674,7 @@
                 gamePaused = false;
                 document.getElementById('gameOverScreen').style.display = 'none';
                 document.getElementById('startBtn').innerHTML = '<i class="fas fa-sync-alt"></i> Restart Mission';
+                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> Pause';
                 
                 // Start game loop
                 gameLoop();
@@ -1479,27 +1684,132 @@
             function fireBullet() {
                 if (!gameRunning || gamePaused) return;
                 
-                bullets.push({
-                    x: player.x + player.width / 2 - 2,
-                    y: player.y,
-                    width: 4,
-                    height: 10,
-                    speed: 7
-                });
+                const fireRate = getWeaponPower('fireRate');
+                const laserPower = getWeaponPower('laser');
+                
+                // Calculate fire delay based on fire rate
+                const fireDelay = Math.max(100, 500 - (fireRate * 80));
+                
+                // Create bullets based on laser power
+                if (laserPower >= 4) {
+                    // Level 4+ laser: triple shot
+                    bullets.push({
+                        x: player.x + player.width / 2 - 6,
+                        y: player.y,
+                        width: 4,
+                        height: 15,
+                        speed: 7
+                    });
+                    bullets.push({
+                        x: player.x + player.width / 2,
+                        y: player.y,
+                        width: 4,
+                        height: 15,
+                        speed: 7
+                    });
+                    bullets.push({
+                        x: player.x + player.width / 2 + 6,
+                        y: player.y,
+                        width: 4,
+                        height: 15,
+                        speed: 7
+                    });
+                } else if (laserPower >= 3) {
+                    // Level 3 laser: double shot
+                    bullets.push({
+                        x: player.x + player.width / 2 - 3,
+                        y: player.y,
+                        width: 4,
+                        height: 15,
+                        speed: 7
+                    });
+                    bullets.push({
+                        x: player.x + player.width / 2 + 3,
+                        y: player.y,
+                        width: 4,
+                        height: 15,
+                        speed: 7
+                    });
+                } else if (laserPower >= 2) {
+                    // Level 2 laser: larger bullet
+                    bullets.push({
+                        x: player.x + player.width / 2 - 3,
+                        y: player.y,
+                        width: 6,
+                        height: 15,
+                        speed: 7
+                    });
+                } else {
+                    // Level 1 laser: basic bullet
+                    bullets.push({
+                        x: player.x + player.width / 2 - 2,
+                        y: player.y,
+                        width: 4,
+                        height: 10,
+                        speed: 7
+                    });
+                }
                 
                 // Rapid fire mode
                 if (player.rapidFire) {
                     setTimeout(() => {
                         if (gameRunning && !gamePaused) {
-                            bullets.push({
-                                x: player.x + player.width / 2 - 2,
-                                y: player.y,
-                                width: 4,
-                                height: 10,
-                                speed: 7
-                            });
+                            if (laserPower >= 4) {
+                                bullets.push({
+                                    x: player.x + player.width / 2 - 6,
+                                    y: player.y,
+                                    width: 4,
+                                    height: 15,
+                                    speed: 7
+                                });
+                                bullets.push({
+                                    x: player.x + player.width / 2,
+                                    y: player.y,
+                                    width: 4,
+                                    height: 15,
+                                    speed: 7
+                                });
+                                bullets.push({
+                                    x: player.x + player.width / 2 + 6,
+                                    y: player.y,
+                                    width: 4,
+                                    height: 15,
+                                    speed: 7
+                                });
+                            } else if (laserPower >= 3) {
+                                bullets.push({
+                                    x: player.x + player.width / 2 - 3,
+                                    y: player.y,
+                                    width: 4,
+                                    height: 15,
+                                    speed: 7
+                                });
+                                bullets.push({
+                                    x: player.x + player.width / 2 + 3,
+                                    y: player.y,
+                                    width: 4,
+                                    height: 15,
+                                    speed: 7
+                                });
+                            } else if (laserPower >= 2) {
+                                bullets.push({
+                                    x: player.x + player.width / 2 - 3,
+                                    y: player.y,
+                                    width: 6,
+                                    height: 15,
+                                    speed: 7
+                                });
+                            } else {
+                                bullets.push({
+                                    x: player.x + player.width / 2 - 2,
+                                    y: player.y,
+                                    width: 4,
+                                    height: 10,
+                                    speed: 7
+                                });
+                            }
                         }
-                    }, 100);
+                    }, fireDelay / 2);
                 }
             }
             
@@ -1508,11 +1818,33 @@
                 if (!gameRunning || gamePaused || specialWeaponCharges <= 0) return;
                 
                 specialWeaponCharges--;
-                specialAttacks.push({
-                    x: player.x + player.width / 2,
-                    y: player.y,
-                    radius: 10
-                });
+                const specialPower = getWeaponPower('special');
+                
+                if (specialPower >= 3) {
+                    // Level 3+ special: multiple explosions
+                    specialAttacks.push({
+                        x: player.x + player.width / 2,
+                        y: player.y,
+                        radius: 10
+                    });
+                    specialAttacks.push({
+                        x: player.x + player.width / 2 - 50,
+                        y: player.y - 30,
+                        radius: 10
+                    });
+                    specialAttacks.push({
+                        x: player.x + player.width / 2 + 50,
+                        y: player.y - 30,
+                        radius: 10
+                    });
+                } else {
+                    // Level 1-2 special: single explosion
+                    specialAttacks.push({
+                        x: player.x + player.width / 2,
+                        y: player.y,
+                        radius: 10
+                    });
+                }
                 
                 showNotification('Special weapon used!', 'warning');
             }
@@ -1610,6 +1942,8 @@
         });
         
         document.getElementById('pauseBtn').addEventListener('click', function() {
+            if (!gameRunning) return;
+            
             gamePaused = !gamePaused;
             this.innerHTML = gamePaused ? 
                 '<i class="fas fa-play"></i> Resume' : 
@@ -1658,6 +1992,7 @@
         document.getElementById('laserStoreItem').addEventListener('click', function() {
             if (coins >= 100) {
                 coins -= 100;
+                updateWeaponProgress('laser', 10);
                 document.getElementById('coinsValue').textContent = coins;
                 showNotification('Laser upgraded!', 'success');
             } else {
@@ -1691,6 +2026,7 @@
             if (coins >= 150) {
                 coins -= 150;
                 specialWeaponCharges++;
+                updateWeaponProgress('special', 5);
                 document.getElementById('coinsValue').textContent = coins;
                 showNotification('Special weapon purchased!', 'success');
             } else {
